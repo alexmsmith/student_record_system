@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using System.Security.Cryptography;
 using System.Data.SqlClient;
 using System.Data;
 
@@ -17,8 +18,8 @@ namespace StudentRecordSystem
     class Program
     {
         /** Connection To SQL Server **/
-        public static string connectionString = "Server=localhost;Database=student_system;Trusted_Connection=True;";
-        public static int counter = 0;
+        public static string connectionString = "Server=LAPTOP-H3HOBEA5\\SQLEXPRESS;Database=student_records;Trusted_Connection=True;";
+        //public static int counter = 0;
         public static DateTime localDate = DateTime.Now;
         struct Student
         {
@@ -35,8 +36,16 @@ namespace StudentRecordSystem
                 Grade = grade;
             }
         }
-        static void Main(string[] args)
+        //static void Main(string[] args)
+        public void studentRecords()
         {
+            /*
+             * Before the Admin User can access the Student Record Base, they will need to
+             * sign into their account. This can be done in the LoginSystem class.
+             */
+            //var loginSystemInstance = new LoginSystem();
+            //loginSystemInstance.setCredentials();
+
             Console.WriteLine("Welcome To The Student Record Base.");
             Console.WriteLine("For Information On Commands, Use 'h' To List The Descriptions.");
             Console.WriteLine();
@@ -51,27 +60,31 @@ namespace StudentRecordSystem
 
                 switch (input)
                 {
-                    case "i":
-                        Insert();
+                    /** Create A New Student User **/
+                    case "c":
+                        createStudentUser();
                         break;
+                    /** Edit A Student User's Details **/
                     case "e":
                         Edit();
                         break;
+                    /** Delete A Student User **/
                     case "d":
                         Delete();
                         break;
+                    /** Read A Student User **/
                     case "r":
                         Read();
                         break;
-                    // View all records (softdeleted and non-deleted).
+                    /** View All Student Users (Softdeleted And Non-Deleted) **/
                     case "a":
                         All();
                         break;
-                    // View only non-deleted records.
+                    /** View Only Non-Deleted Student Users **/
                     case "a+":
                         ReadNonDeleted();
                         break;
-                    // View only soft-deleted records.
+                    /** View Only Soft-Deleted Student Users **/
                     case "a-":
                         ReadSoftDeleted();
                         break;
@@ -85,32 +98,57 @@ namespace StudentRecordSystem
             } while (exit == false);
         }
 
-        /** Insert A New Student Record **/
-        public static void Insert()
+        /** 
+         * Upon Creating A New Student Record, Also Generate
+         * A Student Record And A Student Profile.
+        **/
+        public static void createStudentUser()
         {
             Console.Write("Enter Student First Name: ");
             string fname = Console.ReadLine();
             Console.Write("Enter Student Last Name: ");
             string lname = Console.ReadLine();
-            Console.Write("Enter Student Grade: ");
-            char grade = Console.ReadKey().KeyChar;
+            Console.Write("Enter Student Email: ");
+            string email = Console.ReadLine();
+            Console.Write("Enter Student Contact Number: ");
+            string contactNumber = Console.ReadLine();
+
+            /** Generate A Username Based On first character of Firstname; concatenating Lastname **/
+            char[] fnameChar = fname.ToCharArray();
+            string uname = fnameChar[0] + lname;
+            /** Randomly Generate A Password **/
+            string pword = KeyGenerator.GetUniqueKey();
 
             Console.WriteLine("Inserted.");
 
             SqlConnection conn = new SqlConnection(connectionString);
 
             // When inserting a new record into the table, the id doesn't auto-increment as unique value.
-            // For the time being, calculate the amount of rows within the student_records table and set this counter to the new record id.
+            // For the time being, calculate the amount of rows within the records table and set this counter to the new record id.
             try
             {
-                SqlCommand cmd = new SqlCommand("INSERT INTO student_records (id, first_name, last_name, grade, created_at, updated_at) VALUES (1, @fname, @lname, @grade, @localDate, @localDate)", conn);
-                cmd.Parameters.AddWithValue("@fname", fname);
-                cmd.Parameters.AddWithValue("@lname", lname);
-                cmd.Parameters.AddWithValue("@grade", grade);
+                SqlCommand cmd = new SqlCommand("INSERT INTO users (username, password, firstname, lastname, created_at, updated_at, user_type, email, contact_number) VALUES (@username, @password, @firstname, @lastname, @localDate, @localDate, @type, @email, @contactNumber)", conn);
+                cmd.Parameters.AddWithValue("@username", uname.ToLower());
+                cmd.Parameters.AddWithValue("@password", pword);
+                cmd.Parameters.AddWithValue("@firstname", fname);
+                cmd.Parameters.AddWithValue("@lastname", lname);
                 cmd.Parameters.AddWithValue("@localDate", localDate);
+                cmd.Parameters.AddWithValue("@type", 1);
+                cmd.Parameters.AddWithValue("@email", email);
+                cmd.Parameters.AddWithValue("@contactNumber", contactNumber);
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
                 DataTable dbtl = new DataTable();
                 sqlda.Fill(dbtl);
+
+                conn.Close();
+                /** Generate A Student Record For This Student User **/
+                var generateSR = new GenerateStudentRecord();
+                //generateSR.generate(fname, lname, uname);
+                generateSR.generate(uname);
+
+                /** Generate A Student Profile For This Student User **/
+                var generateSP = new GenerateStudentProfile();
+                generateSP.generate(uname);
             }
             catch (Exception e)
             {
@@ -137,7 +175,7 @@ namespace StudentRecordSystem
 
             try
             {
-                SqlCommand cmd = new SqlCommand("UPDATE student_records SET [" + column + "]=@value WHERE id=@searchId", conn);
+                SqlCommand cmd = new SqlCommand("UPDATE records SET [" + column + "]=@value WHERE id=@searchId", conn);
                 cmd.Parameters.AddWithValue("@value", value);
                 cmd.Parameters.AddWithValue("@searchId", searchId);
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
@@ -163,7 +201,7 @@ namespace StudentRecordSystem
 
             try
             {
-                SqlCommand cmd = new SqlCommand("UPDATE student_records SET deleted_at=@localDate WHERE id=@searchId", conn);
+                SqlCommand cmd = new SqlCommand("UPDATE records SET deleted_at=@localDate WHERE id=@searchId", conn);
                 cmd.Parameters.AddWithValue("@localDate", localDate);
                 cmd.Parameters.AddWithValue("@searchId", searchId);
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
@@ -189,7 +227,7 @@ namespace StudentRecordSystem
 
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM student_records WHERE id=@searchId", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM records WHERE id=@searchId", conn);
                 cmd.Parameters.AddWithValue("@searchId", searchId);
 
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
@@ -218,7 +256,7 @@ namespace StudentRecordSystem
 
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM student_records WHERE deleted_at IS NULL", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM records WHERE deleted_at IS NULL", conn);
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
                 DataTable dbtl = new DataTable();
                 sqlda.Fill(dbtl);
@@ -243,7 +281,7 @@ namespace StudentRecordSystem
 
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM student_records WHERE deleted_at IS NOT NULL", conn);
+                SqlCommand cmd = new SqlCommand("SELECT * FROM records WHERE deleted_at IS NOT NULL", conn);
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
                 DataTable dbtl = new DataTable();
                 sqlda.Fill(dbtl);
@@ -264,20 +302,24 @@ namespace StudentRecordSystem
         /** Read All Student Records From Database **/
         public static void All()
         {
-            Console.WriteLine(string.Format("|{0,3}|{1,6}|{2,6}|{3,5}|{4,6}|{5,6}|{6,6}", "Id", "First Name", "Last Name", "Grade", "Created At", "Updated At", "Deleted At"));
+            Console.WriteLine(string.Format("|{0,3}|{1,6}|{2,6}|{3,5}|{4,6}|{5,6}", "First Name", "Last Name", "Grade", "Created At", "Updated At", "Deleted At"));
             Console.WriteLine("------------------------------");
 
             SqlConnection conn = new SqlConnection(connectionString);
 
             try
             {
-                SqlCommand cmd = new SqlCommand("SELECT * FROM student_records", conn);
+                SqlCommand cmd = new SqlCommand("" +
+                    "SELECT users.firstname, users.lastname, records.grade, users.created_at, users.updated_at, users.deleted_at " +
+                    "FROM users " +
+                    "INNER JOIN records ON users.id = records.user_id"
+                    ,conn);
                 SqlDataAdapter sqlda = new SqlDataAdapter(cmd);
                 DataTable dtbl = new DataTable();
                 sqlda.Fill(dtbl);
                 foreach (DataRow row in dtbl.Rows)
                 {
-                    Console.WriteLine(String.Format("|{0,3}|{1,6}|{2,6}|{3,5}|{4,6}|{5,6}|{6,6}", row["id"], row["first_name"], row["last_name"], row["grade"], row["created_at"], row["updated_at"], row["deleted_at"]));
+                    Console.WriteLine(String.Format("|{0,3}|{1,6}|{2,6}|{3,5}|{4,5}|{5,5}", row["firstname"], row["lastname"], row["grade"], row["created_at"], row["updated_at"], row["deleted_at"]));
                 }
 
                 conn.Close();

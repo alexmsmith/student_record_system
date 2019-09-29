@@ -1,0 +1,6 @@
+C:\Users\44770\source\repos\StudentRecordSystem\StudentRecordSystem\bin\Debug\StudentRecordSystem.exe.config
+C:\Users\44770\source\repos\StudentRecordSystem\StudentRecordSystem\bin\Debug\StudentRecordSystem.exe
+C:\Users\44770\source\repos\StudentRecordSystem\StudentRecordSystem\bin\Debug\StudentRecordSystem.pdb
+C:\Users\44770\source\repos\StudentRecordSystem\StudentRecordSystem\obj\Debug\StudentRecordSystem.csprojAssemblyReference.cache
+C:\Users\44770\source\repos\StudentRecordSystem\StudentRecordSystem\obj\Debug\StudentRecordSystem.exe
+C:\Users\44770\source\repos\StudentRecordSystem\StudentRecordSystem\obj\Debug\StudentRecordSystem.pdb
