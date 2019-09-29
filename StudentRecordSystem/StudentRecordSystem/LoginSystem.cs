@@ -23,10 +23,11 @@ namespace StudentRecordSystem
             {
                 Console.Write("Please Enter Your Username: ");
                 usernameInput = Console.ReadLine();
-                Console.WriteLine();
+                Console.Clear();
 
                 Console.Write("Please Enter Your Password: ");
                 passwordInput = Console.ReadLine();
+                Console.Clear();
 
                 SqlConnection conn = new SqlConnection(connectionString);
 
